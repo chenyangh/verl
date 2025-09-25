@@ -19,7 +19,7 @@ Single Process Actor
 
 import logging
 import os
-
+from transformers.models.phimoe import modeling_phimoe as phimoe
 import torch
 from torch import nn
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
@@ -480,7 +480,17 @@ class DataParallelPPOActor(BasePPOActor):
                         loss = policy_loss * loss_scale_factor
                     else:
                         loss = policy_loss * loss_scale_factor
+                    
                     # breakpoint()  
+                    lb_coef = float(os.environ.get("MOE_AUX_LOSS_COEF", "0.0"))
+                    if lb_coef != 0.0:
+                        moe_aux = phimoe.phimoe_sum_load_balance_loss(self.model)
+                        loss = loss + lb_coef * moe_aux
+                        # (optional) metrics
+                        if hasattr(self, "metrics"):
+                            self.metrics["moe_aux_loss"] = float(moe_aux.detach().cpu())
+                            self.metrics["moe_aux_coef"] = lb_coef 
+                            
                     loss.backward()
 
                     micro_batch_metrics.update(
@@ -498,3 +508,4 @@ class DataParallelPPOActor(BasePPOActor):
                 append_to_dict(metrics, mini_batch_metrics)
         self.actor_optimizer.zero_grad()
         return metrics
+
