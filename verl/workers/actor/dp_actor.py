@@ -480,6 +480,7 @@ class DataParallelPPOActor(BasePPOActor):
                         loss = policy_loss * loss_scale_factor
                     else:
                         loss = policy_loss * loss_scale_factor
+                    # breakpoint()  
                     loss.backward()
 
                     micro_batch_metrics.update(

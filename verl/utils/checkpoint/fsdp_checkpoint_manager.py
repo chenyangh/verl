@@ -18,7 +18,8 @@ import os
 import warnings
 from dataclasses import asdict, dataclass
 from typing import Optional
-
+import json 
+from pathlib import Path
 import torch
 import torch.distributed
 from accelerate import init_empty_weights
@@ -276,7 +277,26 @@ class FSDPCheckpointManager(BaseCheckpointManager):
                     # if the generation config isn't available, we don't save it
                     pass
 
-            model_config.save_pretrained(hf_config_tokenizer_path)
+            # model_config.save_pretrained(hf_config_tokenizer_path)
+            # model_config.save_pretrained(hf_config_tokenizer_path)
+            try:
+                model_config.save_pretrained(hf_config_tokenizer_path, use_diff=False)
+            except TypeError:
+                # Fallback: sanitize and write config manually to avoid non-string-key crashes
+                def _sanitize(o):
+                    if isinstance(o, dict):
+                        return {str(k): _sanitize(v) for k, v in o.items()}
+                    if isinstance(o, (list, tuple)):
+                        return [_sanitize(x) for x in o]
+                    if isinstance(o, torch.dtype):
+                        return str(o).replace("torch.", "")
+                    return o
+                cfg = _sanitize(model_config.to_dict())
+                out_dir = Path(hf_config_tokenizer_path)
+                out_dir.mkdir(parents=True, exist_ok=True)
+                with open(out_dir / "config.json", "w") as f:
+                    json.dump(cfg, f, indent=2, sort_keys=True)
+
             if self.processing_class is not None:
                 self.processing_class.save_pretrained(hf_config_tokenizer_path)
             log_with_rank(

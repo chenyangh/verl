@@ -178,7 +178,6 @@ class RLHFDataset(Dataset):
                             doc[prompt_key], add_generation_prompt=True, **self.apply_chat_template_kwargs
                         )
                     )
-
             dataframe = dataframe.filter(
                 lambda doc: doc2len(doc) <= self.max_prompt_length,
                 num_proc=self.num_workers,
