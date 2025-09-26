@@ -1,6 +1,6 @@
 set -x
 
-EXP_NAME="phi-moe-math-grpo"
+EXP_NAME="phi-moe-math-grpo-aux-loss"
 # EXP_NAME="Qwen2.5-3B-math-grpo"
 WANDB_API_KEY=496fa07a6ccb07d43292fe86646aff9c1a362b35
 WANDB_PROJECT=MoE-HW
@@ -20,11 +20,12 @@ SAVE_DIR=${SAVE_DIR:-/root/verl_ckpt/moe/${EXP_NAME}}
 ROLLOUT_DIR=${ROLLOUT_DIR:-${SAVE_DIR}/rollout_data}
 VAL_ROLLOUT_DIR=${VAL_ROLLOUT_DIR:-${SAVE_DIR}/val_rollout_data}
 SAVE_DIR=${SAVE_DIR}/checkpoints
-
-
+# export PHIMOE_FREEZE_ROUTER=1
+export MOE_AUX_LOSS=1
+export MOE_AUX_LOSS_COEF=0.001
 mkdir -p "${SAVE_DIR}" "${ROLLOUT_DIR}" "${VAL_ROLLOUT_DIR}"
 
-# export RAY_DEBUG_POST_MORTEM=1 
+export RAY_DEBUG_POST_MORTEM=1 
 
 python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
@@ -63,8 +64,8 @@ python3 -m verl.trainer.main_ppo \
     trainer.experiment_name=$EXP_NAME  \
     trainer.n_gpus_per_node=8 \
     trainer.nnodes=1 \
-    trainer.save_freq=100 \
-    trainer.test_freq=20 \
+    trainer.save_freq=200 \
+    trainer.test_freq=50 \
     trainer.default_local_dir=${SAVE_DIR} \
     trainer.rollout_data_dir=${ROLLOUT_DIR} \
     trainer.validation_data_dir=${VAL_ROLLOUT_DIR} \

@@ -86,6 +86,7 @@ class DataParallelPPOActor(BasePPOActor):
             else entropy_from_logits
         )
         self.device_name = get_device_name()
+        self.lb_coef = float(os.environ.get("MOE_AUX_LOSS_COEF", "0.0"))
 
     def _forward_micro_batch(
         self, micro_batch, temperature, calculate_entropy=False
@@ -277,6 +278,9 @@ class DataParallelPPOActor(BasePPOActor):
                         else:
                             entropy = torch.utils.checkpoint.checkpoint(verl_F.entropy_from_logits, logits)
 
+            if os.environ.get("MOE_AUX_LOSS", None) is not None and output.aux_loss is not None:
+                aux_loss = output.aux_loss
+                return entropy, log_probs, aux_loss
             return entropy, log_probs
 
     def _optimizer_step(self):
@@ -340,9 +344,13 @@ class DataParallelPPOActor(BasePPOActor):
             micro_batch = micro_batch.to(get_device_id())
             model_inputs = {**micro_batch.batch, **micro_batch.non_tensor_batch}
             with torch.no_grad():
-                entropy, log_probs = self._forward_micro_batch(
+                micro_batch_outputs = self._forward_micro_batch(
                     model_inputs, temperature=temperature, calculate_entropy=calculate_entropy
                 )
+                if len(micro_batch_outputs) == 3:
+                    entropy, log_probs, _ = micro_batch_outputs
+                else:
+                    entropy, log_probs = micro_batch_outputs
             log_probs_lst.append(log_probs)
             if calculate_entropy:
                 entropy_lst.append(entropy)
@@ -431,9 +439,15 @@ class DataParallelPPOActor(BasePPOActor):
                     calculate_entropy = False
                     if entropy_coeff != 0:
                         calculate_entropy = True
-                    entropy, log_prob = self._forward_micro_batch(
+                    micro_batch_outputs = self._forward_micro_batch(
                         model_inputs, temperature=temperature, calculate_entropy=calculate_entropy
                     )
+                    if len(micro_batch_outputs) == 3:
+                        entropy, log_prob, aux_loss = micro_batch_outputs
+                        micro_batch_metrics["actor/moe_aux_loss"] = aux_loss.detach().item() * loss_scale_factor
+                    else:
+                        entropy, log_prob = micro_batch_outputs
+                        aux_loss = None
 
                     if on_policy:
                         old_log_prob = log_prob.detach()
@@ -475,21 +489,15 @@ class DataParallelPPOActor(BasePPOActor):
                         micro_batch_metrics["actor/kl_loss"] = kl_loss.detach().item() * loss_scale_factor
                         micro_batch_metrics["actor/kl_coef"] = self.config.kl_loss_coef
 
+                    if aux_loss is not None:
+                        lb_coef = self.lb_coef
+                        policy_loss = policy_loss + aux_loss * lb_coef
+                    
                     if self.config.use_dynamic_bsz:
                         # relative to the dynamic bsz
                         loss = policy_loss * loss_scale_factor
                     else:
                         loss = policy_loss * loss_scale_factor
-                    
-                    # breakpoint()  
-                    lb_coef = float(os.environ.get("MOE_AUX_LOSS_COEF", "0.0"))
-                    if lb_coef != 0.0:
-                        moe_aux = phimoe.phimoe_sum_load_balance_loss(self.model)
-                        loss = loss + lb_coef * moe_aux
-                        # (optional) metrics
-                        if hasattr(self, "metrics"):
-                            self.metrics["moe_aux_loss"] = float(moe_aux.detach().cpu())
-                            self.metrics["moe_aux_coef"] = lb_coef 
                             
                     loss.backward()
 
