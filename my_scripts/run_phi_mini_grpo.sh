@@ -1,6 +1,6 @@
 set -x
 
-EXP_NAME="phi-moe-math-grpo-aux-loss"
+EXP_NAME="phi-moe-math-grpo"
 # EXP_NAME="Qwen2.5-3B-math-grpo"
 WANDB_API_KEY=496fa07a6ccb07d43292fe86646aff9c1a362b35
 WANDB_PROJECT=MoE-HW
@@ -22,10 +22,10 @@ VAL_ROLLOUT_DIR=${VAL_ROLLOUT_DIR:-${SAVE_DIR}/val_rollout_data}
 SAVE_DIR=${SAVE_DIR}/checkpoints
 # export PHIMOE_FREEZE_ROUTER=1
 export MOE_AUX_LOSS=1
-export MOE_AUX_LOSS_COEF=0.001
+export MOE_AUX_LOSS_COEF=0.0
 mkdir -p "${SAVE_DIR}" "${ROLLOUT_DIR}" "${VAL_ROLLOUT_DIR}"
 
-export RAY_DEBUG_POST_MORTEM=1 
+# export RAY_DEBUG_POST_MORTEM=1 
 
 python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
@@ -33,7 +33,7 @@ python3 -m verl.trainer.main_ppo \
     data.val_files="$VAL_PARQUET" \
     data.train_batch_size=128 \
     data.max_prompt_length=1024 \
-    data.max_response_length=1024 \
+    data.max_response_length=1536 \
     data.filter_overlong_prompts=True \
     data.truncation='error' \
     data.prompt_key=prompt \
@@ -55,7 +55,7 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.name=vllm \
     actor_rollout_ref.rollout.gpu_memory_utilization=0.3 \
     actor_rollout_ref.rollout.n=5 \
-    actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=2 \
+    actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=4 \
     actor_rollout_ref.ref.fsdp_config.param_offload=True \
     algorithm.use_kl_in_reward=False \
     trainer.critic_warmup=0 \
@@ -64,7 +64,7 @@ python3 -m verl.trainer.main_ppo \
     trainer.experiment_name=$EXP_NAME  \
     trainer.n_gpus_per_node=8 \
     trainer.nnodes=1 \
-    trainer.save_freq=200 \
+    trainer.save_freq=100 \
     trainer.test_freq=50 \
     trainer.default_local_dir=${SAVE_DIR} \
     trainer.rollout_data_dir=${ROLLOUT_DIR} \
@@ -73,6 +73,10 @@ python3 -m verl.trainer.main_ppo \
     custom_reward_function.name=compute_score \
     actor_rollout_ref.actor.strategy=fsdp2 \
     trainer.total_epochs=15 $@
+
+# actor_rollout_ref.rollout.top_p=0.8 \
+# actor_rollout_ref.rollout.temperature=1.0 \
+# actor_rollout_ref.rollout.do_sample=True \
 
 
 # could add
