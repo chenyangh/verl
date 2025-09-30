@@ -26,8 +26,8 @@ export MOE_AUX_LOSS_COEF=0.0
 mkdir -p "${SAVE_DIR}" "${ROLLOUT_DIR}" "${VAL_ROLLOUT_DIR}"
 
 # export RAY_DEBUG_POST_MORTEM=1 
-clip_ratio_low=0.002
-clip_ratio_high=0.002
+clip_ratio_low=0.0003
+clip_ratio_high=0.0004
 
 python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
