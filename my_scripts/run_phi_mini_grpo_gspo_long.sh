@@ -34,6 +34,7 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.actor.policy_loss.loss_mode=gspo \
     actor_rollout_ref.actor.clip_ratio_low=${clip_ratio_low} \
     actor_rollout_ref.actor.clip_ratio_high=${clip_ratio_high} \
+    actor_rollout_ref.actor.loss_agg_mode="seq-mean-token-mean" \
     reward_model.reward_manager=dapo \
     +reward_model.reward_kwargs.overlong_buffer_cfg.enable=True \
     +reward_model.reward_kwargs.overlong_buffer_cfg.len=$((1024*1)) \
