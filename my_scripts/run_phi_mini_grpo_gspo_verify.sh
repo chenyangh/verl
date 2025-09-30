@@ -1,6 +1,6 @@
 set -x
 
-EXP_NAME="phi-moe-math-grpo-gspo-v"
+EXP_NAME="phi-moe-math-grpo-verify"
 # EXP_NAME="Qwen2.5-3B-math-grpo"
 WANDB_API_KEY=496fa07a6ccb07d43292fe86646aff9c1a362b35
 WANDB_PROJECT=MoE-HW
