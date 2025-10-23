@@ -1,0 +1,8 @@
+working_dir: ./
+excludes: ["/.git/"]
+env_vars:
+  TORCH_NCCL_AVOID_RECORD_STREAMS: "1"
+  CUDA_DEVICE_MAX_CONNECTIONS: "1"
+  WANDB_MODE: "offline"
+  WANDB_SILENT: "true"
+  WANDB_DIR: "/root/verl_ckpt/moe/wandb_offline"

@@ -26,10 +26,13 @@ export MOE_AUX_LOSS_COEF=0.0
 mkdir -p "${SAVE_DIR}" "${ROLLOUT_DIR}" "${VAL_ROLLOUT_DIR}"
 
 # export RAY_DEBUG_POST_MORTEM=1 
-clip_ratio_low=0.0003
-clip_ratio_high=0.0004
+clip_ratio_low=0.00003
+clip_ratio_high=0.00004
+export WANDB_MODE="offline"
+export WANDB_SILENT=true
+export WANDB_DIR="/root/verl_ckpt/moe/${EXP_NAME}/wandb_offline"
 
-wandb login 496fa07a6ccb07d43292fe86646aff9c1a362b35
+
 python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
     actor_rollout_ref.actor.policy_loss.loss_mode=gspo \
@@ -69,8 +72,8 @@ python3 -m verl.trainer.main_ppo \
     trainer.logger='["console","wandb"]' \
     trainer.project_name=$WANDB_PROJECT \
     trainer.experiment_name=$EXP_NAME  \
-    trainer.n_gpus_per_node=8 \
-    trainer.nnodes=1 \
+    trainer.n_gpus_per_node=4 \
+    trainer.nnodes=2 \
     trainer.save_freq=100 \
     trainer.test_freq=50 \
     trainer.default_local_dir=${SAVE_DIR} \
