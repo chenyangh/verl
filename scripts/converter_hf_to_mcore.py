@@ -50,7 +50,7 @@ def _init_args():
     """
     Examples:
 
-    1. single rank conversion for any model:
+    1. single rank c onversion for any model:
         > python converter_hf_to_mcore.py --hf_model_path %{hf_model} --output_path ${output_path}
     2. distributed conversion for DeepseekV3 671B:
         > torchrun --nproc_per_node 1 --nnodes 4 --node_rank ${RANK} converter_hf_to_mcore.py \

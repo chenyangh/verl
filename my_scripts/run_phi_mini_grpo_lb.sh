@@ -20,10 +20,11 @@ SAVE_DIR=${SAVE_DIR:-/root/verl_ckpt/moe/${EXP_NAME}}
 ROLLOUT_DIR=${ROLLOUT_DIR:-${SAVE_DIR}/rollout_data}
 VAL_ROLLOUT_DIR=${VAL_ROLLOUT_DIR:-${SAVE_DIR}/val_rollout_data}
 SAVE_DIR=${SAVE_DIR}/checkpoints
+mkdir -p "${SAVE_DIR}" "${ROLLOUT_DIR}" "${VAL_ROLLOUT_DIR}"
 # export PHIMOE_FREEZE_ROUTER=1
 export MOE_AUX_LOSS=1
 export MOE_AUX_LOSS_COEF=0.001
-mkdir -p "${SAVE_DIR}" "${ROLLOUT_DIR}" "${VAL_ROLLOUT_DIR}"
+
 
 # export RAY_DEBUG_POST_MORTEM=1 
 
